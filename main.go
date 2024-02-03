@@ -2,47 +2,52 @@ package main
 
 import (
 	"fmt"
+	"log"
 
-	"github.com/gocolly/colly"
+	"github.com/gocolly/colly/v2"
 )
 
 type Book struct {
-	Title  string
-	Author string
-	Votes  int32
+	Title     string
+	Author    string
+	AuthorURL string
+	ImageURL  string
+	Votes     string
 }
 
-// This is simple page scraper which will return TOP 100 books from lubimyczytac.pl
 func main() {
 	c := colly.NewCollector()
+	var books []Book
 
 	c.OnRequest(func(r *colly.Request) {
-		fmt.Println("Visiting", r.URL)
+		// fmt.Println("Visiting", r.URL)
 	})
 
-	c.OnHTML(".row.relative.w-100", func(e *colly.HTMLElement) {
-		e.ForEach(".authorAllBooks__singleImgWrap", func(_ int, el *colly.HTMLElement) {
-			imageURL := el.ChildAttr("img", "src")
-			fmt.Println("Image URL:", imageURL)
-		})
+	c.OnHTML("#listTop100", func(e *colly.HTMLElement) {
+		e.ForEach(".authorAllBooks__single", func(_ int, e *colly.HTMLElement) {
+			image_url := e.ChildAttr("img", "src")
+			author_name := e.ChildText(".authorAllBooks__singleTextAuthor")
+			book_title := e.ChildText(".authorAllBooks__singleTextTitle")
+			author_url := e.ChildAttr(".authorAllBooks__singleTextAuthor a", "href")
+			rating := e.ChildText(".listLibrary__ratingAll")
 
-		e.ForEach(".authorAllBooks__singleTextAuthor", func(_ int, el *colly.HTMLElement) {
-			author_url := el.ChildAttr("a", "href")
-			fmt.Println("Autor URL:", author_url)
+			book := Book{Title: book_title, Author: author_name, AuthorURL: author_url, ImageURL: image_url, Votes: rating}
+			books = append(books, book)
+			log.Print(book)
 		})
+	})
 
-		// For each nested <div> with class "authorAllBooks__singleText", extract the book title
-		e.ForEach(".authorAllBooks__singleText", func(_ int, el *colly.HTMLElement) {
-			bookTitle := el.ChildText(".authorAllBooks__singleTextTitle")
-			fmt.Println("Book Title:", bookTitle)
-		})
+	c.OnHTML("#listTop100Paginator", func(e *colly.HTMLElement) {
+		e.ForEach(".authorAllBooks__single", func(_ int, e *colly.HTMLElement) {
+			image_url := e.ChildAttr("img", "src")
+			author_name := e.ChildText(".authorAllBooks__singleTextAuthor")
+			book_title := e.ChildText(".authorAllBooks__singleTextTitle")
+			author_url := e.ChildAttr(".authorAllBooks__singleTextAuthor a", "href")
+			rating := e.ChildText(".listLibrary__ratingAll")
 
-		// For each nested <div> with class "listLibrary__info", extract additional information
-		e.ForEach(".listLibrary__info", func(_ int, el *colly.HTMLElement) {
-			rating := el.ChildText(".listLibrary__ratingStarsNumber")
-			ratingsCount := el.ChildText(".listLibrary__ratingAll")
-			fmt.Println("Rating:", rating)
-			fmt.Println("Ratings Count:", ratingsCount)
+			book := Book{Title: book_title, Author: author_name, AuthorURL: author_url, ImageURL: image_url, Votes: rating}
+			books = append(books, book)
+			log.Print(book)
 		})
 	})
 
@@ -50,5 +55,9 @@ func main() {
 		fmt.Println("Error", err)
 	})
 
-	c.Visit("https://lubimyczytac.pl/top100")
+	var total_page int = 7
+	for i := 1; i <= total_page; i++ {
+		url := fmt.Sprintf("https://lubimyczytac.pl/top100?page=%d", i)
+		c.Visit(url)
+	}
 }
