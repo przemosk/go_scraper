@@ -1,6 +1,6 @@
 # GO-SCRAPER
 
-This web scraper will provide you list with TOP100 books from the lubimyczytac.pl website.
+This web scraper will provide you list with TOP100 books from the [lubimyczytac.pl](https://lubimyczytac.pl/) website.
 
 ## REQUIRMENTS
 
